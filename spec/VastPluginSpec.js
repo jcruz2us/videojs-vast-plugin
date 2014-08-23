@@ -321,9 +321,18 @@
         });
       });
     });
+  });
+
+
+  describe("skip button", function () {
+
+    afterEach(function () {
+      //clear out any previous skip button
+      delete player.vast.skipButton;
+    });
 
     describe("skipCountdown", function () {
-      it("should display the skip button", function () {
+      it("should create the skip button", function () {
         spyOn(player.vast, 'createSkipButton');
         
         player.vast.skipCountdown(5);
@@ -333,7 +342,8 @@
 
       describe("called with time left", function () {
         it("should display the time left in the skip button", function () {
-          player.vast.skipCountdown(5);
+          //the function will receive floats
+          player.vast.skipCountdown(5.3434123);
           expect(player.vast.skipButton.innerHTML).toBe("Skip in 5...");
         });
 
@@ -360,19 +370,26 @@
     describe("createSkipButton", function () {
       it("should create a button", function () {
         spyOn(document, 'createElement').and.callThrough();
-
         player.vast.createSkipButton();
         
         expect(document.createElement).toHaveBeenCalledWith('div');
         expect(player.vast.skipButton).toBeDefined();
+        expect(' ' + player.vast.skipButton.className + ' ').toContain(" vast-skip-button ");
       });
 
       it("should create a button only once", function () {
         spyOn(document, 'createElement').and.callThrough();
 
         player.vast.createSkipButton();
+        player.vast.createSkipButton();
         
         expect(document.createElement.calls.count()).toEqual(1);
+      });
+
+      it("should append the button to the video element parent", function () {
+        var spy = spyOn(player.el(), 'appendChild');
+        player.vast.createSkipButton();
+        expect(spy).toHaveBeenCalledWith(player.vast.skipButton);
       });
 
       it("should make the button skip the ad on click", function () {
@@ -386,13 +403,17 @@
     });
 
     describe("skipAd", function () {
+      var dummyEvent = {
+        stopPropagation: function () {}
+      };
+
       describe("called when no time is left", function () {
         it("should trigger 'adskipped' and teardown", function () {
           spyOn(player, 'trigger');
           spyOn(player.vast, 'tearDown');
 
           player.vast.skipCountdown(0);
-          player.vast.skipAd();
+          player.vast.skipAd(dummyEvent);
 
           expect(player.trigger).toHaveBeenCalledWith('adskipped');
           expect(player.vast.tearDown).toHaveBeenCalled();
@@ -405,7 +426,7 @@
           spyOn(player.vast, 'tearDown');
 
           player.vast.skipCountdown(5);
-          player.vast.skipAd();
+          player.vast.skipAd(dummyEvent);
 
           expect(player.trigger).not.toHaveBeenCalled();
           expect(player.vast.tearDown).not.toHaveBeenCalled();

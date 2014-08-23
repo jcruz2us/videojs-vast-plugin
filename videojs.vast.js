@@ -171,26 +171,26 @@
       player.vast.blocker = blocker;
       player.el().insertBefore(blocker, player.controlBar.el());
 
-      var skipButton = document.createElement("div");
-      skipButton.className = "vast-skip-button";
-      if (settings.skip < 0) {
-        skipButton.style.display = "none";
-      }
-      player.vast.skipButton = skipButton;
-      player.el().appendChild(skipButton);
+      // var skipButton = document.createElement("div");
+      // skipButton.className = "vast-skip-button";
+      // if (settings.skip < 0) {
+      //   skipButton.style.display = "none";
+      // }
+      // player.vast.skipButton = skipButton;
+      // player.el().appendChild(skipButton);
 
-      player.on("timeupdate", player.vast.timeupdate);
+      // player.on("timeupdate", player.vast.timeupdate);
 
-      skipButton.onclick = function(e) {
-        if((' ' + player.vast.skipButton.className + ' ').indexOf(' enabled ') >= 0) {
-          player.vast.tearDown();
-        }
-        if(Event.prototype.stopPropagation !== undefined) {
-          e.stopPropagation();
-        } else {
-          return false;
-        }
-      };
+      // skipButton.onclick = function(e) {
+      //   if((' ' + player.vast.skipButton.className + ' ').indexOf(' enabled ') >= 0) {
+      //     player.vast.tearDown();
+      //   }
+      //   if(Event.prototype.stopPropagation !== undefined) {
+      //     e.stopPropagation();
+      //   } else {
+      //     return false;
+      //   }
+      // };
 
       player.one("ended", player.vast.tearDown);
     };
@@ -207,17 +207,46 @@
     };
 
     player.vast.timeupdate = function(e) {
-      player.loadingSpinner.el().style.display = "none";
-      var timeLeft = Math.ceil(settings.skip - player.currentTime());
+    };
+
+
+    player.vast.skipCountdown = function (timeLeft) {
+      timeLeft = Math.round(timeLeft);
+      player.vast.createSkipButton();
       if(timeLeft > 0) {
         player.vast.skipButton.innerHTML = "Skip in " + timeLeft + "...";
       } else {
-        if((' ' + player.vast.skipButton.className + ' ').indexOf(' enabled ') === -1){
+        if(player.vast.skipButton.innerHTML !== "Skip"){
           player.vast.skipButton.className += " enabled";
           player.vast.skipButton.innerHTML = "Skip";
         }
       }
     };
+
+    player.vast.createSkipButton = function () {
+      if (player.vast.skipButton) return;
+
+      player.vast.skipButton = document.createElement("div");
+      player.vast.skipButton.className = "vast-skip-button";
+      player.el().appendChild(player.vast.skipButton);
+
+      player.vast.skipButton.onclick = player.vast.skipAd;
+    };
+
+    player.vast.skipAd = function (e) {
+      if(player.vast.skipButton.innerHTML !== "Skip")
+        return;
+
+      player.trigger('adskipped');
+      player.vast.tearDown();
+
+      if(Event.prototype.stopPropagation !== undefined) {
+        e.stopPropagation();
+      } else {
+        return false;
+      }
+    };
+
     player.vast.createSourceObjects = function (media_files) {
       var sourcesByFormat = {}, i, j, tech;
       var techOrder = player.options().techOrder;
