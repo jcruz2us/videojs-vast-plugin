@@ -171,33 +171,34 @@
       player.vast.blocker = blocker;
       player.el().insertBefore(blocker, player.controlBar.el());
 
-      // var skipButton = document.createElement("div");
-      // skipButton.className = "vast-skip-button";
-      // if (settings.skip < 0) {
-      //   skipButton.style.display = "none";
-      // }
-      // player.vast.skipButton = skipButton;
-      // player.el().appendChild(skipButton);
+      //use the 'skip-countdown' events emitted by the 
+      //vastTracker to start/update the skip ad button
+      //countdown. The vastTracker correctly fires the event in the following
+      //scenerios
+      //
+      //If a VAST ad is set to not be skippable, 'skip-countdown' will
+      //never fire, therefore the skip button will never show up
+      //
+      //If a VAST ad is set to be skippable, 'skip-countdown' will emit
+      //multiple times until the skip offset has been reached.
+      //The event payload will contain the timeLeft or 0 if the ad has 
+      //reached the skip offset.
+      player.vastTracker.on("skip-countdown", player.vast.skipCountdown);
 
-      // player.on("timeupdate", player.vast.timeupdate);
-
-      // skipButton.onclick = function(e) {
-      //   if((' ' + player.vast.skipButton.className + ' ').indexOf(' enabled ') >= 0) {
-      //     player.vast.tearDown();
-      //   }
-      //   if(Event.prototype.stopPropagation !== undefined) {
-      //     e.stopPropagation();
-      //   } else {
-      //     return false;
-      //   }
-      // };
-
+      //we only need to listen for 1 'timeupdate'
+      //after that, the loading spinner will already be hidden
+      player.one("timeupdate", player.vast.hideLoadingSpinner);
       player.one("ended", player.vast.tearDown);
     };
 
     player.vast.tearDown = function() {
-      player.vast.skipButton.parentNode.removeChild(player.vast.skipButton);
-      player.vast.blocker.parentNode.removeChild(player.vast.blocker);
+      player.vastTracker.removeListener("skip-countdown", player.vast.skipCountdown);
+
+      if (player.vast.skipButton) {
+        player.vast.skipButton.parentNode.removeChild(player.vast.skipButton);
+        delete player.vast.skipButton;
+      }
+
       player.off('timeupdate', player.vast.timeupdate);
       player.off('ended', player.vast.tearDown);
       player.ads.endLinearAdMode();
@@ -206,7 +207,8 @@
       }
     };
 
-    player.vast.timeupdate = function(e) {
+    player.vast.hideLoadingSpinner = function(e) {
+      player.loadingSpinner.el().style.display = "none";
     };
 
 

@@ -182,6 +182,16 @@
     
     describe("tearDown", function() {
 
+      beforeEach(function() {
+        player.vastTracker = {
+          removeListener: function () {}
+        };
+      });
+
+      // afterEach(function () {
+      //   delete player.vast.skipButton;
+      // });
+
       it("should end the linear ad", function() {
         spyOn(player.ads, "endLinearAdMode");
         spyOn(player, "off");
@@ -196,6 +206,32 @@
         expect(player.off).toHaveBeenCalledWith("ended", jasmine.any(Function));
         expect(player.ads.endLinearAdMode).toHaveBeenCalled();
       });
+
+      it("should stop listening for the 'skip-countdown' event", function () {
+        spyOn(player.vastTracker, "removeListener");
+  
+        player.vast.tearDown();
+
+        //make sure the listener is set with the correct handler
+        expect(player.vastTracker.removeListener)
+          .toHaveBeenCalledWith("skip-countdown", player.vast.skipCountdown);
+      });
+
+
+      it("should remove the skip button", function () {
+        player.vast.skipCountdown(0);
+
+        var removeChildSpy = spyOn(player.vast.skipButton.parentNode, "removeChild");
+        //keep a reference to the skip button
+        //before its removed so we can check that it removed
+        var skipButton = player.vast.skipButton;
+
+        player.vast.tearDown();
+
+        //make sure the listener is set with the correct handler
+        expect(removeChildSpy).toHaveBeenCalledWith(skipButton);
+        expect(player.vast.skipButton).not.toBeDefined();
+      });
     });
 
     describe("preroll", function() {
@@ -205,7 +241,8 @@
           clickThroughURLTemplate: "a whole new page",
           clickTrackingURLTemplate: "a new fantastic advertisement",
           trackURLs: function(){},
-          progressFormated: function(){}
+          progressFormated: function(){},
+          on: function () {}
         };
         player.vast.sources = [];
       });
@@ -222,6 +259,25 @@
         spyOn(player, "one");
         player.vast.preroll();
         expect(player.one).toHaveBeenCalledWith("ended", jasmine.any(Function));
+      });
+
+      it("should listen for the skip-countdown event from the vastTracker", function() {
+        var timeLeft = 5;      
+        spyOn(player.vastTracker, "on");
+  
+        player.vast.preroll();
+
+        //make sure the listener is set with the correct handler
+        expect(player.vastTracker.on).toHaveBeenCalledWith("skip-countdown", player.vast.skipCountdown);
+      });
+
+      it("should remove the loading spinner on timeupdate", function () {
+        spyOn(player.vast, "hideLoadingSpinner");
+  
+        player.vast.preroll();
+        player.trigger('timeupdate');
+        //make sure the listener is set with the correct handler
+        expect(player.vast.hideLoadingSpinner).toHaveBeenCalled();
       });
 
     });
@@ -333,7 +389,7 @@
 
     describe("skipCountdown", function () {
       it("should create the skip button", function () {
-        spyOn(player.vast, 'createSkipButton');
+        spyOn(player.vast, 'createSkipButton').and.callThrough();
         
         player.vast.skipCountdown(5);
         
@@ -434,6 +490,14 @@
       });
     });
 
+  });
+
+  describe("hideLoadingSpinner", function () {
+    it("should hide the loading spinner", function () {
+      player.vast.hideLoadingSpinner();
+
+      expect(player.loadingSpinner.el().style.display).toBe("none");
+    });
   });
 
 })(window, videojs, DMVAST);
