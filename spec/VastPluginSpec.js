@@ -320,7 +320,97 @@
           expect(player.trigger).toHaveBeenCalledWith("adtimeout");
         });
       });
+    });
 
+    describe("skipCountdown", function () {
+      it("should display the skip button", function () {
+        spyOn(player.vast, 'createSkipButton');
+        
+        player.vast.skipCountdown(5);
+        
+        expect(player.vast.createSkipButton).toHaveBeenCalled();
+      });
+
+      describe("called with time left", function () {
+        it("should display the time left in the skip button", function () {
+          player.vast.skipCountdown(5);
+          expect(player.vast.skipButton.innerHTML).toBe("Skip in 5...");
+        });
+
+        it("should disable the skip button", function () {
+          player.vast.skipCountdown(5);
+          expect(' ' + player.vast.skipButton.className + ' ').not.toContain("enabled");
+        });
+      });
+
+      describe("called with no time left", function () {
+        it("should display 'Skip' in the skip button", function () {
+          player.vast.skipCountdown(0);
+          expect(player.vast.skipButton.innerHTML).toBe("Skip");
+        });
+
+        it("should enabled the skip button", function () {
+          player.vast.skipCountdown(0);
+          expect(' ' + player.vast.skipButton.className + ' ').toContain("enabled");
+        });
+      });
+
+    });
+
+    describe("createSkipButton", function () {
+      it("should create a button", function () {
+        spyOn(document, 'createElement').and.callThrough();
+
+        player.vast.createSkipButton();
+        
+        expect(document.createElement).toHaveBeenCalledWith('div');
+        expect(player.vast.skipButton).toBeDefined();
+      });
+
+      it("should create a button only once", function () {
+        spyOn(document, 'createElement').and.callThrough();
+
+        player.vast.createSkipButton();
+        
+        expect(document.createElement.calls.count()).toEqual(1);
+      });
+
+      it("should make the button skip the ad on click", function () {
+        spyOn(player.vast, 'skipAd');
+
+        player.vast.createSkipButton();
+        player.vast.skipButton.onclick();
+
+        expect(player.vast.skipAd).toHaveBeenCalled();
+      });
+    });
+
+    describe("skipAd", function () {
+      describe("called when no time is left", function () {
+        it("should trigger 'adskipped' and teardown", function () {
+          spyOn(player, 'trigger');
+          spyOn(player.vast, 'tearDown');
+
+          player.vast.skipCountdown(0);
+          player.vast.skipAd();
+
+          expect(player.trigger).toHaveBeenCalledWith('adskipped');
+          expect(player.vast.tearDown).toHaveBeenCalled();
+        });
+      });
+
+      describe("called when time is left", function () {
+        it("should not skip the ad", function () {
+          spyOn(player, 'trigger');
+          spyOn(player.vast, 'tearDown');
+
+          player.vast.skipCountdown(5);
+          player.vast.skipAd();
+
+          expect(player.trigger).not.toHaveBeenCalled();
+          expect(player.vast.tearDown).not.toHaveBeenCalled();
+        });
+      });
     });
 
   });
