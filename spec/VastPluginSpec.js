@@ -188,10 +188,6 @@
         };
       });
 
-      // afterEach(function () {
-      //   delete player.vast.skipButton;
-      // });
-
       it("should end the linear ad", function() {
         spyOn(player.ads, "endLinearAdMode");
         spyOn(player, "off");
